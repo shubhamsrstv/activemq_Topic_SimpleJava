@@ -1,5 +1,7 @@
 package com.example.activemqTopic;
 
+import org.apache.activemq.ActiveMQConnection;
+import org.apache.activemq.ActiveMQConnectionFactory;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 import java.net.URISyntaxException;
@@ -7,14 +9,8 @@ import java.util.Scanner;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
-import javax.jms.Message;
-import javax.jms.MessageConsumer;
-import javax.jms.MessageProducer;
 import javax.jms.Session;
 import javax.jms.Topic;
-
-import org.apache.activemq.ActiveMQConnection;
-import org.apache.activemq.ActiveMQConnectionFactory;
 
 @SpringBootApplication
 public class ActivemqTopicApplication
@@ -41,22 +37,16 @@ public class ActivemqTopicApplication
 			ConnectionFactory connectionFactory = new ActiveMQConnectionFactory(ActiveMQConnection.DEFAULT_BROKER_URL);
 			connection = connectionFactory.createConnection();
 			Session session = connection.createSession(false,Session.AUTO_ACKNOWLEDGE);
-			Topic topic = session.createTopic("Testing");   
-			for(int i=0;i<countConsume;i++)
-			{
-				MessageConsumer consumer = session.createConsumer(topic);
-				consumer.setMessageListener(new ConsumerMessageListener("consumer"+(i+1)));
-			}
-			connection.start();    
-			for(int i=0;i<countSend;i++)
-			{
-				Message msg = session.createTextMessage(payload[i]);
-				MessageProducer producer = session.createProducer(topic);
-				System.out.println("Sending text '" + payload[i] + "'");
-				producer.send(msg);
-				Thread.sleep(1000);
-			}
+			Topic topic = session.createTopic("Testing");
 			
+			ReceivingMessage receiving = new ReceivingMessage();
+			receiving.receiving(countConsume, session, topic);
+		
+			connection.start();
+		
+			SendingMessage sending = new SendingMessage();
+			sending.sending(countSend, payload, session, topic);
+		
 			session.close();
 		}
 		finally
@@ -66,5 +56,6 @@ public class ActivemqTopicApplication
 				connection.close();
 			}
 		}
+		
 	}
 }
